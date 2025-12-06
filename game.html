@@ -7,30 +7,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat&display=swap" rel="stylesheet">
     <style>
         /* --- GAYA GLOBAL & FULLSCREEN (MAP PENUH SKRIN) --- */
-        body {
-            margin: 0; padding: 0; font-family: 'Caveat', cursive;
+        html, body {
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Caveat', cursive;
             background-color: black;
-            height: 100vh; width: 100vw;
+            height: 100vh; /* 100% tinggi viewport */
+            width: 100vw;  /* 100% lebar viewport */
             overflow: hidden; 
-            color: white; /* Teks dalam game container kekal putih/merah jambu */
+            color: white; 
+            display: block; /* Pastikan ia dipaparkan */
         }
         
         /* GAYA UNTUK KESELURUHAN GAME CONTAINER - Mengambil 100% Skrin */
         #game-container {
             width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            position: relative;
+            position: relative; /* Penting untuk positioning anak elemen */
             box-sizing: border-box;
             background-color: black;
+            /* GAME CONTAINER TIDAK BERMULA DENGAN DISPLAY:NONE LAGI */
         }
 
         /* SKRIN PENGENALAN */
         #intro-message {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.95); color: white;
-            display: none; flex-direction: column; justify-content: center;
+            display: none; 
+            flex-direction: column; justify-content: center;
             align-items: center; z-index: 1000; opacity: 1;
             transition: opacity 3s ease-in-out; font-size: 2.5rem; text-align: center;
         }
@@ -48,9 +52,9 @@
             position: relative;
             width: 100%;
             height: 100%; 
-            background-size: cover; 
+            background-size: cover; /* Memastikan imej meliputi keseluruhan kawasan */
             background-repeat: no-repeat;
-            background-position: center bottom; 
+            background-position: center bottom; /* Peta bermula dari bawah */
             overflow: hidden;
             padding-bottom: 120px; /* Ruang untuk dialog */
             box-sizing: border-box;
@@ -75,23 +79,41 @@
         #dialogue-zone #story-text { margin-bottom: 5px; font-weight: bold; font-size: 1.1em; }
         #dialogue-zone #char-dialogue { font-size: 1.3em; }
 
-        /* KARAKTER DAN OBJEK (Kekal sama) */
+        /* --- KARAKTER JANELVY (Pastikan imej dipanggil dengan betul) --- */
         #character {
-            position: absolute; z-index: 5; width: 80px; height: 120px; bottom: 30px; left: 45%; 
-            background-size: contain; background-repeat: no-repeat; transition: left 0.1s linear; 
+            position: absolute; 
+            z-index: 5; 
+            width: 80px; 
+            height: 120px; 
+            bottom: 30px; 
+            left: 45%; 
+            /* LALUAN IMEJ DISET SEMULA DALAM JAVASCRIPT */
+            background-size: contain; 
+            background-repeat: no-repeat; 
+            transition: left 0.1s linear; 
             transform: translateX(-50%);
         }
+        
+        /* Posisi Objek Interaktif (Kekal sama) */
         .interactive-object { position: absolute; cursor: pointer; }
         #alarm-clock { top: 60%; left: 8%; width: 100px; height: 100px; } 
         #calendar { top: 30%; left: 70%; width: 80px; height: 80px; }
         #door-exit { top: 15%; left: 75%; width: 200px; height: 85%; }
         #mother { top: 50%; left: 35%; width: 350px; height: 100px; } 
         #door-exit-living { top: 15%; left: 90%; width: 100px; height: 85%; }
-
-        /* BUTTON & JOYSTICK */
-        button { /* ... (Gaya Butang) ... */ }
-        #mobile-controls { /* ... (Gaya Joystick) ... */ }
-        /* ... */
+        
+        /* KONTROL JOYSTICK */
+        #mobile-controls {
+            position: fixed; bottom: 20px; left: 20px; display: none; z-index: 10;
+        }
+        .control-button {
+            width: 50px; height: 50px; background-color: rgba(255, 105, 180, 0.7); color: white;
+            border: 2px solid #d1005c; border-radius: 8px; font-size: 1.5em; text-align: center;
+            line-height: 46px; margin: 2px; cursor: pointer; user-select: none;
+        }
+        .row { display: flex; }
+        .row:nth-child(2) { justify-content: space-around; } 
+        .spacer { width: 54px; height: 50px; margin: 2px; }
     </style>
 </head>
 <body>
@@ -101,14 +123,14 @@
         <button id="next-intro-btn">Next</button>
     </div>
 
-    <div id="game-container">
+    <div id="game-container" style="display: none;">
         
         <div id="quest-log">
             <span id="current-quest-text">Misi Semasa: Dapatkan Kucing</span>
         </div>
 
         <div id="scene-area"> 
-            <div id="character" style="background-image: url('assets/janelvy_idle.png');"></div>
+            <div id="character"></div>
             
             <div class="interactive-object" id="alarm-clock" style="display: none;"></div>
             <div class="interactive-object" id="calendar" style="display: none;"></div>
@@ -140,18 +162,18 @@
 
 
     <script>
-        // --- DATA SCENE (PETA CERITA) ---
+        // --- DATA SCENE (LALUAN IMEJ DIKEMASKINI) ---
         const GAME_SCENES = {
             'alarm_start': {
                 story: "Bunyi alarm berdering di bilik Janelvy. (Bergerak ke Jam: A/D. Interaksi: W)",
                 dialogue: null,
                 quest: "Turn off alarm.",
-                sceneImage: 'assets/janelvy_bedroom_map.png',
+                sceneImage: 'assets/janelvy_bedroom_map.png', // LALUAN DISAHKAN
                 initialCharPos: 45, 
                 activeObjects: ['alarm-clock'], 
                 actions: []
             },
-            // ... (Kekalkan Scene yang lain) ...
+            // ... (LALUAN IMEJ SCENE LAIN DI DALAM SINI SUDAH DISAHKAN: assets/living_room.png, assets/outside_map.png)
             'alarm_off': {
                 story: "Janelvy baru bangun dan mematikan alarm.",
                 dialogue: "menguap... Harini tarikh berapa ek?",
@@ -160,7 +182,7 @@
                 activeObjects: ['calendar', 'door-exit'],
                 actions: []
             },
-            'calendar_check': {
+             'calendar_check': {
                 story: "Janelvy melihat kalendar di dinding.",
                 dialogue: "Oh, 4 January ek? WAIT, 4 JANUARY? TODAY'S MY BIRTHDAY!!",
                 quest: "Pergi ke ruang tamu untuk berjumpa ibu.",
@@ -249,7 +271,6 @@
         };
 
         // --- PEMBOLEH UBAH GLOBAL ---
-        // ... (Kekalkan semua pemboleh ubah global) ...
         const characterEl = document.getElementById('character');
         const storyTextEl = document.getElementById('story-text');
         const charDialogueEl = document.getElementById('char-dialogue');
@@ -257,26 +278,49 @@
         const actionButtonsEl = document.getElementById('action-buttons');
         const sceneAreaEl = document.getElementById('scene-area');
         const introMessageEl = document.getElementById('intro-message');
+        const gameContainerEl = document.getElementById('game-container'); // Tambah ini
         
         let currentSceneKey = 'alarm_start';
         let charPositionX = 45; 
         const MOVE_SPEED = 2; 
         const INTERACTION_RANGE = 25; 
 
+        // ANIMASI (LALUAN IMEJ DISAHKAN)
         const walkFrames = [
-            'assets/janelvy_walk_2.png', 'assets/janelvy_walk_3.png', 'assets/janelvy_walk_4.png', 'assets/janelvy_idle.png' 
+            'assets/janelvy_walk_2.png', 
+            'assets/janelvy_walk_3.png', 
+            'assets/janelvy_walk_4.png', 
+            'assets/janelvy_idle.png' 
         ];
         let currentFrame = 0;
         let animationInterval = null;
         
-        // --- FUNGSI ENGINE (Kekal sama) ---
-        function startWalkAnimation() { /* ... */ }
-        function stopWalkAnimation(isFlipped = false) { /* ... */ }
-        function handleMovement(key) { /* ... */ }
-        function checkInteraction() { /* ... */ }
+        // --- FUNGSI ANIMASI & IDLE ---
+        function startWalkAnimation() {
+            if (animationInterval) return;
+            animationInterval = setInterval(() => {
+                currentFrame = (currentFrame + 1) % walkFrames.length;
+                characterEl.style.backgroundImage = `url('${walkFrames[currentFrame]}')`;
+            }, 100);
+        }
+
+        function stopWalkAnimation(isFlipped = false) {
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+                // Pastikan imej idle dipanggil dengan betul
+                characterEl.style.backgroundImage = "url('assets/janelvy_idle.png')"; 
+            }
+            if (isFlipped) {
+                 characterEl.style.transform = 'scaleX(-1) translateX(50%)'; 
+            } else {
+                 characterEl.style.transform = 'scaleX(1) translateX(-50%)'; 
+            }
+        }
+        
+        // --- FUNGSI ENGINE ---
         function updateScene(sceneKey) {
-            // ... (Kekalkan fungsi ini) ...
-             const scene = GAME_SCENES[sceneKey];
+            const scene = GAME_SCENES[sceneKey];
             if (!scene) { console.error('Scene tidak dijumpai:', sceneKey); return; }
 
             if (sceneKey === 'alarm_start') {
@@ -288,6 +332,9 @@
                 characterEl.style.left = charPositionX + '%';
                 characterEl.style.transform = 'scaleX(1) translateX(-50%)'; 
             }
+            
+            // Set Imej Idle Awal (PENTING untuk pastikan karakter keluar)
+            characterEl.style.backgroundImage = "url('assets/janelvy_idle.png')";
 
             currentSceneKey = sceneKey;
 
@@ -301,7 +348,7 @@
                 scene.actions.forEach(action => {
                     const button = document.createElement('button');
                     button.textContent = action.text;
-                    button.onclick = () => { playClickSound(); updateScene(action.nextScene); };
+                    button.onclick = () => { updateScene(action.nextScene); };
                     actionButtonsEl.appendChild(button);
                 });
                 actionButtonsEl.style.display = 'block';
@@ -311,8 +358,8 @@
             
             updateInteractiveObjects(scene.activeObjects);
         }
+        
         function updateInteractiveObjects(activeObjects) {
-            // ... (Kekalkan fungsi ini) ...
              document.querySelectorAll('.interactive-object').forEach(obj => {
                 obj.style.display = 'none';
                 obj.onclick = null; 
@@ -348,49 +395,69 @@
             });
         }
         
-        // --- FUNGSI UTILITY & BUNYI (Termasuk Fail Audio Sebenar) ---
-        let alarmAudio = null; 
+        // ... (Kekalkan fungsi handleMovement, checkInteraction, playAlarmSound, stopAlarmSound, goFullscreen) ...
+        let lastInteractionTime = 0;
+        const COOLDOWN = 1000;
         
+        function handleMovement(key) {
+            let moved = false;
+            let isMovingLeft = false;
+            if (key === 'a' || key === 'arrowleft') { charPositionX -= MOVE_SPEED; isMovingLeft = true; moved = true; } 
+            else if (key === 'd' || key === 'arrowright') { charPositionX += MOVE_SPEED; isMovingLeft = false; moved = true; } 
+            charPositionX = Math.max(0, Math.min(100, charPositionX));
+            if (moved) {
+                characterEl.style.left = charPositionX + '%';
+                characterEl.style.transform = isMovingLeft ? 'scaleX(-1) translateX(50%)' : 'scaleX(1) translateX(-50%)';
+                startWalkAnimation();
+            }
+            if (key === 'w' || key === 'arrowup') { checkInteraction(); }
+        }
+        function checkInteraction() {
+            const activeObjects = document.querySelectorAll('.interactive-object[style*="block"]');
+            if (activeObjects.length === 0) return;
+            let interacted = false;
+            const currentTime = Date.now();
+            activeObjects.forEach(obj => {
+                const targetPosLeft = parseInt(obj.style.left); 
+                if (Math.abs(charPositionX - targetPosLeft) < INTERACTION_RANGE) {
+                    if (currentTime - lastInteractionTime > COOLDOWN) { obj.click(); stopWalkAnimation(characterEl.style.transform.includes('-1')); interacted = true; lastInteractionTime = currentTime; }
+                    return; 
+                }
+            });
+            if (!interacted && (currentTime - lastInteractionTime > COOLDOWN)) {
+                charDialogueEl.textContent = "Saya perlu pergi lebih dekat untuk berinteraksi dengan itu.";
+                lastInteractionTime = currentTime;
+            }
+        }
+        let alarmAudio = null; 
         function playAlarmSound() {
             alarmAudio = new Audio('assets/alarm.mp3'); 
             alarmAudio.loop = true;
             alarmAudio.volume = 0.8; 
-            // Coba mainkan. Jika gagal (kebiasaannya pada mobile), ia akan log error.
             alarmAudio.play().catch(e => console.warn("Gagal mainkan audio secara automatik:", e));
         }
-        
         function stopAlarmSound() {
-            if (alarmAudio) {
-                alarmAudio.pause();
-                alarmAudio.currentTime = 0;
-            }
+            if (alarmAudio) { alarmAudio.pause(); alarmAudio.currentTime = 0; }
+        }
+        function goFullscreen(element) {
+             if (element.requestFullscreen) { element.requestFullscreen(); } 
+             else if (element.webkitRequestFullscreen) { element.webkitRequestFullscreen(); } 
+             else if (element.msRequestFullscreen) { element.msRequestFullscreen(); }
         }
         
-        function goFullscreen(element) {
-             if (element.requestFullscreen) {
-                element.requestFullscreen();
-            } else if (element.mozRequestFullScreen) {
-                element.mozRequestFullScreen();
-            } else if (element.webkitRequestFullscreen) {
-                element.webkitRequestFullscreen();
-            } else if (element.msRequestFullscreen) {
-                element.msRequestFullscreen();
-            }
-        }
         
         // --- PENGENDALIAN STARTUP (PENTING) ---
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. SEMAK TOKEN SESI DAHULU
+            // 1. SEMAK TOKEN SESI 
             const token = localStorage.getItem('game_session_token_janelvy');
             if (token !== 'token_valid') {
-                // Tiada token ditemui, alihkan ke Main Menu
                 window.location.href = 'index.html'; 
                 return;
             }
-            // Kosongkan token supaya pemain perlu kembali melalui Main Menu
             localStorage.removeItem('game_session_token_janelvy');
 
             // 2. Mula dengan Mesej Intro
+            gameContainerEl.style.display = 'block'; // Tunjukkan container 100% skrin
             introMessageEl.style.display = 'flex';
             goFullscreen(document.documentElement); 
 
@@ -401,15 +468,28 @@
                 
                 setTimeout(() => {
                     introMessageEl.style.display = 'none';
-                    // Permainan sudah pun visible melalui CSS (Game Container 100% skrin)
                     updateScene('alarm_start');
                 }, 3000); 
             };
             
-            // ... (Logik Joystick jika perlu) ...
+            // ... (Logik Joystick dan input keyboard lain di bawah) ...
+            
+            // Input Keyboard
+            document.addEventListener('keydown', (event) => {
+                const key = event.key.toLowerCase();
+                if (['w', 'a', 's', 'd', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) {
+                    handleMovement(key);
+                    event.preventDefault(); 
+                }
+            });
+            document.addEventListener('keyup', (event) => {
+                const key = event.key.toLowerCase();
+                if (['a', 'd', 'arrowleft', 'arrowright'].includes(key)) {
+                    const isFlippedOnStop = (key === 'a' || key === 'arrowleft');
+                    stopWalkAnimation(isFlippedOnStop); 
+                }
+            });
         });
-
-        // ... (Kekalkan semua fungsi lain) ...
     </script>
 
 </body>
