@@ -132,11 +132,11 @@
 
     <script>
         // --- KONSTAN LALUAN IMEJ (SILA PASTIKAN FAIL INI ADA DALAM FOLDER assets/) ---
-        const IDLE_IMAGE = 'assets/1-removebg-preview.webp'; 
+        const IDLE_IMAGE = 'assets/janelvy_idle.png'; 
         const walkFrames = [
-            'assets/2-removebg-preview.webp', 
-            'assets/3-removebg-preview.webp', 
-            'assets/4-removebg-preview.webp', 
+            'assets/janelvy_walk_2.png', 
+            'assets/janelvy_walk_3.png', 
+            'assets/janelvy_walk_4.png', 
             IDLE_IMAGE 
         ];
 
@@ -146,7 +146,7 @@
                 story: "Bunyi alarm berdering di bilik Janelvy. (Bergerak ke Jam: A/D. Interaksi: W)",
                 dialogue: null,
                 quest: "Turn off alarm.",
-                sceneImage: 'assets/Gemini_Generated_Image_fxn30sfxn30sfxn3.jpg', // Map Bilik Tidur
+                sceneImage: 'assets/janelvy_bedroom_map.png', // Map Bilik Tidur
                 initialCharPos: 45, 
                 activeObjects: ['alarm-clock'], 
                 actions: []
@@ -155,7 +155,7 @@
                 story: "Janelvy baru bangun dan mematikan alarm.",
                 dialogue: "menguap... Harini tarikh berapa ek?",
                 quest: "Check calendar. (Bergerak ke Kalendar: A/D. Interaksi: W)",
-                sceneImage: 'assets/Gemini_Generated_Image_fxn30sfxn30sfxn3.jpg',
+                sceneImage: 'assets/janelvy_bedroom_map.png',
                 activeObjects: ['calendar', 'door-exit'],
                 actions: []
             },
@@ -163,7 +163,7 @@
                 story: "Janelvy melihat kalendar di dinding.",
                 dialogue: "Oh, 4 January ek? WAIT, 4 JANUARY? TODAY'S MY BIRTHDAY!!",
                 quest: "Pergi ke ruang tamu untuk berjumpa ibu.",
-                sceneImage: 'assets/Gemini_Generated_Image_fxn30sfxn30sfxn3.jpg',
+                sceneImage: 'assets/janelvy_bedroom_map.png',
                 activeObjects: ['door-exit'],
                 actions: [
                     { text: "Teruskan", nextScene: 'head_to_living_room' }
