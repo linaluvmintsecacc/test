@@ -58,18 +58,17 @@
             flex-direction: column; justify-content: space-between;
         }
 
-        /* --- KARAKTER JANELVY (Skala Logik Diperbaiki) --- */
-        #character {
+         #character {
             position: absolute; 
             z-index: 5; 
-            width: 100px;  /* Ditingkatkan: Dari 80px */
-            height: 150px; /* Ditingkatkan: Dari 120px */
-            bottom: 100px; /* Disesuaikan: Untuk berdiri di atas lantai (Tinggi: 120px + sikit) */
+            width: 8%;  /* Ditingkatkan kepada % saiz skrin */
+            height: 25%; /* Ditingkatkan kepada % saiz skrin */
+            bottom: 120px; /* Disesuaikan: Berdiri tepat di atas kotak dialog */
             left: 45%; 
             background-size: contain; 
             background-repeat: no-repeat; 
             transition: left 0.1s linear; 
-            transform: translateX(-50%); /* Sentiasa sentiasa pada X% */
+            transform: translateX(-50%); 
         }
         
         /* Posisi Objek Interaktif (Dibiarkan sama) */
@@ -389,6 +388,92 @@
                 }
             });
         });
+
+        let charPositionX = 45; 
+const MOVE_SPEED = 2; 
+const INTERACTION_RANGE = 45; // Ditingkatkan daripada 25 kepada 45 untuk jarak interaksi lebih mudah!
+// ...
+
+// FUNGSI CHECK INTERACTION (Diperbaiki)
+function checkInteraction() {
+    const activeObjects = document.querySelectorAll('.interactive-object[style*="block"]');
+    if (activeObjects.length === 0) return;
+    let interacted = false;
+    const currentTime = Date.now();
+    
+    // Semak setiap objek yang aktif
+    activeObjects.forEach(obj => {
+        // Objek interaktif dalam map pixel biasanya menggunakan posisi LEFT: XX%
+        const targetPosLeft = parseInt(obj.style.left); 
+        
+        // Semak jika jarak karakter (charPositionX) dan objek (targetPosLeft) berada dalam julat
+        if (Math.abs(charPositionX - targetPosLeft) < INTERACTION_RANGE) {
+            
+            // Semak cooldown (untuk mengelakkan double click)
+            if (currentTime - lastInteractionTime > COOLDOWN) { 
+                
+                // --- PENTING: Mencetuskan Logik Objek ---
+                obj.click(); 
+                
+                const isFlippedOnStop = characterEl.style.transform.includes('-1');
+                stopWalkAnimation(isFlippedOnStop); 
+                interacted = true; 
+                lastInteractionTime = currentTime; 
+            }
+            return; 
+        }
+    });
+
+    if (!interacted && (currentTime - lastInteractionTime > COOLDOWN)) {
+        // Jika tidak berinteraksi dalam julat, tunjukkan mesej
+        document.getElementById('char-dialogue').textContent = "Saya perlu pergi lebih dekat untuk berinteraksi dengan itu.";
+        lastInteractionTime = currentTime;
+    }
+}
+
+// ... (Kekalkan fungsi lain) ...
+
+// FUNGSI UPDATE INTERACTIVE OBJECTS (Pastikan logic berturutan betul)
+function updateInteractiveObjects(activeObjects) {
+    // ... (Kekalkan logic sembunyi semua objek) ...
+
+    activeObjects.forEach(objId => {
+        const objEl = document.getElementById(objId);
+        if (objEl) {
+            objEl.style.display = 'block';
+            
+            // Logic klik dipindah dari checkInteraction ke sini
+            objEl.onclick = () => {
+                let nextScene = null;
+                
+                // Pastikan anda cukup dekat untuk berinteraksi sebelum menjalankan logic!
+                if (Math.abs(charPositionX - parseInt(objEl.style.left)) > INTERACTION_RANGE) {
+                     document.getElementById('char-dialogue').textContent = "Saya perlu pergi lebih dekat untuk berinteraksi dengan itu.";
+                     return; 
+                }
+                
+                if (objId === 'alarm-clock') {
+                    stopAlarmSound(); 
+                    nextScene = 'alarm_off';
+                }
+                // ... (Kekalkan logic interaksi scene yang lain) ...
+                else if (objId === 'calendar') nextScene = 'calendar_check';
+                else if (objId === 'door-exit') {
+                     nextScene = currentSceneKey === 'alarm_off' || currentSceneKey === 'return_to_room_sad' ? 'head_to_living_room' : 'ask_permission';
+                }
+                else if (objId === 'mother') {
+                    if (currentSceneKey === 'head_to_living_room') nextScene = 'talk_to_mother';
+                    else if (currentSceneKey === 'ask_permission') nextScene = 'cat_missing';
+                }
+                else if (objId === 'door-exit-living') {
+                     nextScene = currentSceneKey === 'mother_reply_sad' ? 'return_to_room_sad' : 'quest_1_start';
+                }
+                
+                if (nextScene) updateScene(nextScene);
+            };
+        }
+    });
+}
     </script>
 
 </body>
