@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Janelvy's Sweet16 Adventure - Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat&display=swap" rel="stylesheet">
+    <style>
+        /* --- GAYA GLOBAL & FULLSCREEN (MAP PENUH SKRIN) --- */
+        body {
+            margin: 0; padding: 0; font-family: 'Caveat', cursive;
+            background-color: black;
+            height: 100vh; width: 100vw;
+            overflow: hidden; 
+            color: white; /* Teks dalam game container kekal putih/merah jambu */
+        }
+        
+        /* GAYA UNTUK KESELURUHAN GAME CONTAINER - Mengambil 100% Skrin */
+        #game-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-sizing: border-box;
+            background-color: black;
+        }
+
+        /* SKRIN PENGENALAN */
+        #intro-message {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.95); color: white;
+            display: none; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 1000; opacity: 1;
+            transition: opacity 3s ease-in-out; font-size: 2.5rem; text-align: center;
+        }
+        #intro-message button { background-color: #d1005c; align-self: flex-end; margin-right: 5%; }
+
+        /* QUEST LOG */
+        #quest-log { 
+            position: absolute; top: 10px; left: 10px; z-index: 50; 
+            font-size: 1.2em; font-weight: bold; color: #ff69b4; 
+            background: rgba(0, 0, 0, 0.5); padding: 5px 10px; border-radius: 5px;
+        }
+
+        /* --- PAPARAN SCENE (MAP) --- */
+        #scene-area {
+            position: relative;
+            width: 100%;
+            height: 100%; 
+            background-size: cover; 
+            background-repeat: no-repeat;
+            background-position: center bottom; 
+            overflow: hidden;
+            padding-bottom: 120px; /* Ruang untuk dialog */
+            box-sizing: border-box;
+        }
+        
+        /* Kotak Dialog di bawah Map */
+        #dialogue-zone {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 2px solid #ff69b4;
+            color: #d1005c;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        #dialogue-zone #story-text { margin-bottom: 5px; font-weight: bold; font-size: 1.1em; }
+        #dialogue-zone #char-dialogue { font-size: 1.3em; }
+
+        /* KARAKTER DAN OBJEK (Kekal sama) */
+        #character {
+            position: absolute; z-index: 5; width: 80px; height: 120px; bottom: 30px; left: 45%; 
+            background-size: contain; background-repeat: no-repeat; transition: left 0.1s linear; 
+            transform: translateX(-50%);
+        }
+        .interactive-object { position: absolute; cursor: pointer; }
+        #alarm-clock { top: 60%; left: 8%; width: 100px; height: 100px; } 
+        #calendar { top: 30%; left: 70%; width: 80px; height: 80px; }
+        #door-exit { top: 15%; left: 75%; width: 200px; height: 85%; }
+        #mother { top: 50%; left: 35%; width: 350px; height: 100px; } 
+        #door-exit-living { top: 15%; left: 90%; width: 100px; height: 85%; }
+
+        /* BUTTON & JOYSTICK */
+        button { /* ... (Gaya Butang) ... */ }
+        #mobile-controls { /* ... (Gaya Joystick) ... */ }
+        /* ... */
+    </style>
+</head>
+<body>
+
+    <div id="intro-message">
+        <p>Janelvy, aku buat game ni seikhlas yang mungkin. And aku buat game ni time aku free so buat game its not a waste of time. Skill coding aku masih buruk so, sorry kalau buruk. Hope you like it ❤</p>
+        <button id="next-intro-btn">Next</button>
+    </div>
+
+    <div id="game-container">
+        
+        <div id="quest-log">
+            <span id="current-quest-text">Misi Semasa: Dapatkan Kucing</span>
+        </div>
+
+        <div id="scene-area"> 
+            <div id="character" style="background-image: url('assets/janelvy_idle.png');"></div>
+            
+            <div class="interactive-object" id="alarm-clock" style="display: none;"></div>
+            <div class="interactive-object" id="calendar" style="display: none;"></div>
+            <div class="interactive-object" id="door-exit" style="display: none;"></div>
+            <div class="interactive-object" id="mother" style="display: none;"></div>
+            <div class="interactive-object" id="door-exit-living" style="display: none;"></div>
+            
+            <div id="dialogue-zone">
+                <p id="story-text">Memuatkan Scene...</p>
+                <p><span id="char-dialogue"></span></p>
+                <div id="action-buttons">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="row">
+            <div class="spacer"></div>
+            <div class="control-button" data-key="w">⬆</div>
+            <div class="spacer"></div>
+        </div>
+        <div class="row">
+            <div class="control-button" data-key="a">⬅</div>
+            <div class="control-button" data-key="s">⬇</div>
+            <div class="control-button" data-key="d">➡</div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- DATA SCENE (PETA CERITA) ---
+        const GAME_SCENES = {
+            'alarm_start': {
+                story: "Bunyi alarm berdering di bilik Janelvy. (Bergerak ke Jam: A/D. Interaksi: W)",
+                dialogue: null,
+                quest: "Turn off alarm.",
+                sceneImage: 'assets/janelvy_bedroom_map.png',
+                initialCharPos: 45, 
+                activeObjects: ['alarm-clock'], 
+                actions: []
+            },
+            // ... (Kekalkan Scene yang lain) ...
+            'alarm_off': {
+                story: "Janelvy baru bangun dan mematikan alarm.",
+                dialogue: "menguap... Harini tarikh berapa ek?",
+                quest: "Check calendar. (Bergerak ke Kalendar: A/D. Interaksi: W)",
+                sceneImage: 'assets/janelvy_bedroom_map.png',
+                activeObjects: ['calendar', 'door-exit'],
+                actions: []
+            },
+            'calendar_check': {
+                story: "Janelvy melihat kalendar di dinding.",
+                dialogue: "Oh, 4 January ek? WAIT, 4 JANUARY? TODAY'S MY BIRTHDAY!!",
+                quest: "Pergi ke ruang tamu untuk berjumpa ibu.",
+                sceneImage: 'assets/janelvy_bedroom_map.png',
+                activeObjects: ['door-exit'],
+                actions: [
+                    { text: "Teruskan", nextScene: 'head_to_living_room' }
+                ]
+            },
+            'head_to_living_room': {
+                story: "Janelvy menuju ke Ruang Tamu. (Bergerak ke Ibu: A/D. Interaksi: W)",
+                dialogue: null,
+                quest: "Jumpa Mak di Ruang Tamu.",
+                sceneImage: 'assets/living_room.png', 
+                initialCharPos: 15, 
+                activeObjects: ['mother'], 
+                actions: []
+            },
+            'talk_to_mother': {
+                story: "Janelvy mendekati ibunya yang sedang duduk di sofa.",
+                dialogue: "Mak, harini hari apa?",
+                quest: "Bercakap dengan Ibu.",
+                sceneImage: 'assets/living_room.png',
+                activeObjects: ['mother'],
+                actions: [{ text: "Tanya Ibu", nextScene: 'mother_reply_1' }]
+            },
+            'mother_reply_1': {
+                story: "Ibunya memandangnya seketika.",
+                dialogue: "Harini 4 January, kenapa pi?",
+                quest: "Bercakap dengan Ibu.",
+                sceneImage: 'assets/living_room.png',
+                activeObjects: ['mother'],
+                actions: [{ text: "Tanya lagi (senyum)", nextScene: 'mother_reply_2' }]
+            },
+            'mother_reply_2': {
+                story: "Jane bertanya lagi sambil tersenyum, berharap jawapan yang dinanti.",
+                dialogue: "Ada apa-apa special tak harini?",
+                quest: "Tunggu jawapan Ibu.",
+                sceneImage: 'assets/living_room.png',
+                activeObjects: ['mother'],
+                actions: [{ text: "Tunggu Jawapan", nextScene: 'mother_reply_sad' }]
+            },
+            'mother_reply_sad': {
+                story: "Ibunya menjawab, Janelvy berasa agak sedih tetapi masih tersenyum.",
+                dialogue: "Harini ek? Rasanya takde, kenapa pi? Nak apa-apa ke?",
+                quest: "Balik ke bilik. (Bergerak ke Pintu: A/D. Interaksi: W)",
+                sceneImage: 'assets/living_room.png',
+                activeObjects: ['door-exit-living'],
+                actions: []
+            },
+            'return_to_room_sad': {
+                story: "Janelvy balik ke biliknya, sedih. Dia menghela nafas panjang.",
+                dialogue: "Kau tak boleh sedih Jane! You're strong! Let's do something untuk tenangkan diri. Hmmm maybe take a walk?",
+                quest: "Minta izin keluar rumah (Bergerak ke Pintu: A/D. Interaksi: W).",
+                sceneImage: 'assets/janelvy_bedroom_map.png',
+                initialCharPos: 45,
+                activeObjects: ['door-exit'], 
+                actions: []
+            },
+            'ask_permission': {
+                story: "Janelvy turun semula ke Ruang Tamu untuk memintak izin. (Bergerak ke Ibu: A/D. Interaksi: W)",
+                dialogue: "Mak, Jane nak keluar ambil angin kejap.",
+                quest: "Tunggu Mak bagi Izin.",
+                sceneImage: 'assets/living_room.png',
+                initialCharPos: 15,
+                activeObjects: ['mother'],
+                actions: []
+            },
+            'cat_missing': {
+                story: "Maknya memberi izin. Sebelum keluar, Janelvy pandang ke kandang kucingnya tetapi kucingnya tiada.",
+                dialogue: "Haish, mesti dia lari lagi. Apalah masalah dia ni. Takpelah, alang-alang nak keluar ni cari lah dia sekali.",
+                quest: "Cari Kucing (Quest 1). (Bergerak ke Pintu: A/D. Interaksi: W)",
+                sceneImage: 'assets/living_room.png',
+                activeObjects: ['door-exit-living'],
+                actions: [
+                    { text: "Keluar Rumah & Mula Cari Kucing", nextScene: 'quest_1_start' }
+                ]
+            },
+            'quest_1_start': {
+                story: "Janelvy melangkah keluar rumah. Misi mencari kucing bermula!",
+                dialogue: "Mana pula si kenit ni sorok? Kena periksa setiap sudut kejiranan.",
+                quest: "Cari Kucing di Luar Rumah.",
+                sceneImage: 'assets/outside_map.png', 
+                actions: [{ text: "TAMAT DEMO. Sila sambung kod...", nextScene: 'alarm_start' }]
+            }
+        };
+
+        // --- PEMBOLEH UBAH GLOBAL ---
+        // ... (Kekalkan semua pemboleh ubah global) ...
+        const characterEl = document.getElementById('character');
+        const storyTextEl = document.getElementById('story-text');
+        const charDialogueEl = document.getElementById('char-dialogue');
+        const questTextEl = document.getElementById('current-quest-text');
+        const actionButtonsEl = document.getElementById('action-buttons');
+        const sceneAreaEl = document.getElementById('scene-area');
+        const introMessageEl = document.getElementById('intro-message');
+        
+        let currentSceneKey = 'alarm_start';
+        let charPositionX = 45; 
+        const MOVE_SPEED = 2; 
+        const INTERACTION_RANGE = 25; 
+
+        const walkFrames = [
+            'assets/janelvy_walk_2.png', 'assets/janelvy_walk_3.png', 'assets/janelvy_walk_4.png', 'assets/janelvy_idle.png' 
+        ];
+        let currentFrame = 0;
+        let animationInterval = null;
+        
+        // --- FUNGSI ENGINE (Kekal sama) ---
+        function startWalkAnimation() { /* ... */ }
+        function stopWalkAnimation(isFlipped = false) { /* ... */ }
+        function handleMovement(key) { /* ... */ }
+        function checkInteraction() { /* ... */ }
+        function updateScene(sceneKey) {
+            // ... (Kekalkan fungsi ini) ...
+             const scene = GAME_SCENES[sceneKey];
+            if (!scene) { console.error('Scene tidak dijumpai:', sceneKey); return; }
+
+            if (sceneKey === 'alarm_start') {
+                stopAlarmSound(); 
+            }
+
+            if (scene.initialCharPos !== undefined) {
+                charPositionX = scene.initialCharPos;
+                characterEl.style.left = charPositionX + '%';
+                characterEl.style.transform = 'scaleX(1) translateX(-50%)'; 
+            }
+
+            currentSceneKey = sceneKey;
+
+            sceneAreaEl.style.backgroundImage = `url('${scene.sceneImage}')`;
+            storyTextEl.textContent = scene.story;
+            charDialogueEl.textContent = scene.dialogue || ""; 
+            questTextEl.textContent = `Misi Semasa: ${scene.quest}`;
+            
+            actionButtonsEl.innerHTML = '';
+            if (scene.actions.length > 0) {
+                scene.actions.forEach(action => {
+                    const button = document.createElement('button');
+                    button.textContent = action.text;
+                    button.onclick = () => { playClickSound(); updateScene(action.nextScene); };
+                    actionButtonsEl.appendChild(button);
+                });
+                actionButtonsEl.style.display = 'block';
+            } else {
+                actionButtonsEl.style.display = 'none';
+            }
+            
+            updateInteractiveObjects(scene.activeObjects);
+        }
+        function updateInteractiveObjects(activeObjects) {
+            // ... (Kekalkan fungsi ini) ...
+             document.querySelectorAll('.interactive-object').forEach(obj => {
+                obj.style.display = 'none';
+                obj.onclick = null; 
+            });
+
+            activeObjects.forEach(objId => {
+                const objEl = document.getElementById(objId);
+                if (objEl) {
+                    objEl.style.display = 'block';
+                    
+                    objEl.onclick = () => {
+                        let nextScene;
+                        
+                        if (objId === 'alarm-clock') {
+                            stopAlarmSound(); 
+                            nextScene = 'alarm_off';
+                        }
+                        else if (objId === 'calendar') nextScene = 'calendar_check';
+                        else if (objId === 'door-exit') {
+                             nextScene = currentSceneKey === 'alarm_off' ? 'head_to_living_room' : 'ask_permission';
+                        }
+                        else if (objId === 'mother') {
+                            if (currentSceneKey === 'head_to_living_room') nextScene = 'talk_to_mother';
+                            else if (currentSceneKey === 'ask_permission') nextScene = 'cat_missing';
+                        }
+                        else if (objId === 'door-exit-living') {
+                             nextScene = currentSceneKey === 'mother_reply_sad' ? 'return_to_room_sad' : 'quest_1_start';
+                        }
+                        
+                        if (nextScene) updateScene(nextScene);
+                    };
+                }
+            });
+        }
+        
+        // --- FUNGSI UTILITY & BUNYI (Termasuk Fail Audio Sebenar) ---
+        let alarmAudio = null; 
+        
+        function playAlarmSound() {
+            alarmAudio = new Audio('assets/alarm.mp3'); 
+            alarmAudio.loop = true;
+            alarmAudio.volume = 0.8; 
+            // Coba mainkan. Jika gagal (kebiasaannya pada mobile), ia akan log error.
+            alarmAudio.play().catch(e => console.warn("Gagal mainkan audio secara automatik:", e));
+        }
+        
+        function stopAlarmSound() {
+            if (alarmAudio) {
+                alarmAudio.pause();
+                alarmAudio.currentTime = 0;
+            }
+        }
+        
+        function goFullscreen(element) {
+             if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.mozRequestFullScreen) {
+                element.mozRequestFullScreen();
+            } else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+            } else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+            }
+        }
+        
+        // --- PENGENDALIAN STARTUP (PENTING) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. SEMAK TOKEN SESI DAHULU
+            const token = localStorage.getItem('game_session_token_janelvy');
+            if (token !== 'token_valid') {
+                // Tiada token ditemui, alihkan ke Main Menu
+                window.location.href = 'index.html'; 
+                return;
+            }
+            // Kosongkan token supaya pemain perlu kembali melalui Main Menu
+            localStorage.removeItem('game_session_token_janelvy');
+
+            // 2. Mula dengan Mesej Intro
+            introMessageEl.style.display = 'flex';
+            goFullscreen(document.documentElement); 
+
+            // Aksi butang NEXT di Intro: Mula Alarm dan Game
+            document.getElementById('next-intro-btn').onclick = () => {
+                introMessageEl.style.opacity = 0; 
+                playAlarmSound(); 
+                
+                setTimeout(() => {
+                    introMessageEl.style.display = 'none';
+                    // Permainan sudah pun visible melalui CSS (Game Container 100% skrin)
+                    updateScene('alarm_start');
+                }, 3000); 
+            };
+            
+            // ... (Logik Joystick jika perlu) ...
+        });
+
+        // ... (Kekalkan semua fungsi lain) ...
+    </script>
+
+</body>
+</html>
